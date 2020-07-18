@@ -10,6 +10,7 @@ const CANVAS_HEIGHT = 500;
 
 
 let dragStartPoint = null;
+let panStartPoint = null;
 
 
 const CanvasApp = () => {
@@ -84,21 +85,35 @@ const CanvasApp = () => {
 
 
   const handleMouseDown = (e) => {
-    if (isClickInside(e)) return;
-
     const _x = e.offsetX;
     const _y = e.offsetY;
     const _dragStartPoint = {
       x: _x,
       y: _y,
     };
-    dragStartPoint = _dragStartPoint;
-    graphicsRef.current.clear();
-    ticker.update();
+   
+    if (isClickInside(e)) {
+      panStartPoint = _dragStartPoint;
+    } else {
+      dragStartPoint = _dragStartPoint;
+    }
+
+    if (!isClickInside(e)) {
+      graphicsRef.current.clear();
+      ticker.update();
+    };
   };
 
   const handleMouseUp = (e) => {
-    if (isClickInside(e)) return;
+    if (panStartPoint) {
+      setPreviewData({
+        x: graphicsRef.current.x,
+        y: graphicsRef.current.y,
+        width: graphicsRef.current.width,
+        height: graphicsRef.current.height
+      });
+      panStartPoint = null;
+    }
 
     if (dragStartPoint) {
       const _deltaX = e.offsetX - dragStartPoint.x;
@@ -108,11 +123,9 @@ const CanvasApp = () => {
         width: _deltaX,
         height: _deltaY,
       });
-    } else {
-      setPreviewData(draggingData);
-    }
 
-    dragStartPoint = null;
+      dragStartPoint = null;
+    }
   };
 
   const handleMouseLeave = () => {
@@ -120,25 +133,52 @@ const CanvasApp = () => {
       setPreviewData(draggingData);
       dragStartPoint = null;
     }
+
+    if (panStartPoint) {
+      setPreviewData(draggingData);
+      panStartPoint = null;
+    }
   };
 
   const handleMouseMove = (e) => {
     if (!graphicsRef.current) return;
 
-    if(dragStartPoint){
+    if(!isClickInside(e) && dragStartPoint){
       const _deltaX = e.offsetX - dragStartPoint.x;
       const _deltaY = e.offsetY - dragStartPoint.y;
 
       graphicsRef.current.clear();
       graphicsRef.current.beginFill(0x0099FF, 0.3);
       graphicsRef.current.lineStyle(1, 0x0099FF, 1, 0, true);
-      graphicsRef.current.drawRect(dragStartPoint.x, dragStartPoint.y, _deltaX, _deltaY);
+      graphicsRef.current.drawRect(0, 0, Math.abs(_deltaX), Math.abs(_deltaY));
+      graphicsRef.current.x = _deltaX > 0 ? dragStartPoint.x : dragStartPoint.x - Math.abs(_deltaX);
+      graphicsRef.current.y = _deltaY > 0 ? dragStartPoint.y : dragStartPoint.y - Math.abs(_deltaY);
       graphicsRef.current.endFill();
   
       setDraggingData({
         ...dragStartPoint,
         width: _deltaX,
         height: _deltaY,
+      });
+      
+      ticker.update();
+    }
+
+
+    if (isClickInside(e) && panStartPoint) {
+      const _deltaX = e.offsetX - panStartPoint.x;
+      const _deltaY = e.offsetY - panStartPoint.y;
+      
+      graphicsRef.current.x += _deltaX;
+      graphicsRef.current.y += _deltaY;
+      panStartPoint.x += _deltaX;
+      panStartPoint.y += _deltaY;
+
+      setDraggingData({
+        x: graphicsRef.current.x,
+        y: graphicsRef.current.y,
+        width: graphicsRef.current.width,
+        height: graphicsRef.current.height,
       });
       
       ticker.update();
