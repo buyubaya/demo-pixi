@@ -72,6 +72,8 @@ const CanvasApp = () => {
 
 
   const isClickInside = (e) => {
+    if (!graphicsRef.current) return false;
+
     const _x = e.offsetX;
     const _y = e.offsetY;
 
@@ -99,6 +101,7 @@ const CanvasApp = () => {
     }
 
     if (!isClickInside(e)) {
+      if (!graphicsRef.current) return;
       graphicsRef.current.clear();
       ticker.update();
     };
@@ -154,7 +157,10 @@ const CanvasApp = () => {
       graphicsRef.current.x = _deltaX > 0 ? dragStartPoint.x : dragStartPoint.x - Math.abs(_deltaX);
       graphicsRef.current.y = _deltaY > 0 ? dragStartPoint.y : dragStartPoint.y - Math.abs(_deltaY);
       graphicsRef.current.endFill();
-  
+
+      graphicsRef.current.interactive = true;
+      graphicsRef.current.cursor = 'move';
+
       setDraggingData({
         ...dragStartPoint,
         width: _deltaX,
